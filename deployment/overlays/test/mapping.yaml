@@ -4,7 +4,4 @@ metadata:
   name: treetracker-web-map-client-beta-be-api
   namespace: webmap
 spec:
-  cors:
-    cors:
-    origins:
-      - '*'
+  host: beta-test.treetracker.org

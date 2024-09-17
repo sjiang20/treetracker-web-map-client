@@ -1,15 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import HomeIcon from '@mui/icons-material/Home';
-import ParkOutlinedIcon from '@mui/icons-material/ParkOutlined';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Portal from '@mui/material/Portal';
 import Typography from '@mui/material/Typography';
-import { styled } from '@mui/material/styles';
-import * as d3 from 'd3';
 import log from 'loglevel';
 import { marked } from 'marked';
 import moment from 'moment';
@@ -17,33 +12,29 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import CustomWorldMap from 'components/CustomWorldMap';
 import FeaturedTreesSlider from 'components/FeaturedTreesSlider';
+import HeadTag from 'components/HeadTag';
+import ImpactSection from 'components/ImpactSection';
+import InformationCard1 from 'components/InformationCard1';
+import ProfileAvatar from 'components/ProfileAvatar';
 import TreeSpeciesCard from 'components/TreeSpeciesCard';
-import CustomImageWrapper from 'components/common/CustomImageWrapper';
+import VerifiedBadge from 'components/VerifiedBadge';
+import Crumbs from 'components/common/Crumbs';
+import CustomCard from 'components/common/CustomCard';
+import Icon from 'components/common/CustomIcon';
+import Info from 'components/common/Info';
+import { useDrawerContext } from 'context/DrawerContext';
+import { useMobile } from 'hooks/globalHooks';
+import planterBackground from 'images/background.png';
+import CalendarIcon from 'images/icons/calendar.svg';
+import LocationIcon from 'images/icons/location.svg';
+import PeopleIcon from 'images/icons/people.svg';
+import TreeIcon from 'images/icons/tree.svg';
+import SearchIcon from 'images/search.svg';
+import { useMapContext } from 'mapContext';
 import { getPlanterById, getOrgLinks } from 'models/api';
-import ImpactSection from '../../components/ImpactSection';
-import InformationCard1 from '../../components/InformationCard1';
-import ProfileAvatar from '../../components/ProfileAvatar';
-import VerifiedBadge from '../../components/VerifiedBadge';
-import BackButton from '../../components/common/BackButton';
-import Crumbs from '../../components/common/Crumbs';
-import CustomCard from '../../components/common/CustomCard';
-import Icon from '../../components/common/CustomIcon';
-import DataTag from '../../components/common/DataTag';
-import DrawerTitle from '../../components/common/DrawerTitle';
-import Info from '../../components/common/Info';
-import { useDrawerContext } from '../../context/DrawerContext';
-import { useMobile } from '../../hooks/globalHooks';
-import planterBackground from '../../images/background.png';
-import CalendarIcon from '../../images/icons/calendar.svg';
-import LocationIcon from '../../images/icons/location.svg';
-import PeopleIcon from '../../images/icons/people.svg';
-import TreeIcon from '../../images/icons/tree.svg';
-import imagePlaceholder from '../../images/image-placeholder.png';
-import SearchIcon from '../../images/search.svg';
-import { useMapContext } from '../../mapContext';
-import { makeStyles } from '../../models/makeStyles';
-import * as pathResolver from '../../models/pathResolver';
-import { getLocationString, getPlanterName, wrapper } from '../../models/utils';
+import { makeStyles } from 'models/makeStyles';
+import * as pathResolver from 'models/pathResolver';
+import { getLocationString, getPlanterName, wrapper } from 'models/utils';
 
 // make styles for component with material-ui
 const useStyles = makeStyles()((theme) => ({
@@ -85,8 +76,9 @@ const placeholderText = `Lorem ipsum dolor sit amet consectetur adipisicing elit
 export default function Planter(props) {
   log.warn('props for planter page:', props);
   const { planter, nextExtraIsEmbed } = props;
+
   const { featuredTrees } = planter;
-  const treeCount = featuredTrees.trees.length;
+  const treeCount = featuredTrees?.total;
   const mapContext = useMapContext();
   const isMobile = useMobile();
 
@@ -140,6 +132,12 @@ export default function Planter(props) {
 
   return (
     <>
+      <HeadTag
+        title={`${getPlanterName(
+          planter.first_name,
+          planter.last_name,
+        )} - Planter`}
+      />
       <Box
         sx={[
           {
@@ -218,7 +216,6 @@ export default function Planter(props) {
             rotation={planter.image_rotation}
           />
         </Box>
-
         {isMobile && (
           <Portal
             container={() => document.getElementById('drawer-title-container')}
@@ -235,9 +232,15 @@ export default function Planter(props) {
               <Box sx={{ mt: 2 }}>
                 <Info
                   iconURI={CalendarIcon}
-                  info={`Planter since ${moment(planter.created_at).format(
-                    'MMMM DD, YYYY',
-                  )}`}
+                  info={
+                    <>
+                      Planter since
+                      <time dateTime={planter?.created_at}>
+                        {' '}
+                        {moment(planter?.created_at).format('MMMM DD, YYYY')}
+                      </time>
+                    </>
+                  }
                 />
               </Box>
               <Box sx={{ mt: 2 }}>
@@ -290,9 +293,15 @@ export default function Planter(props) {
             <Box sx={{ mt: 2 }}>
               <Info
                 iconURI={CalendarIcon}
-                info={`Planter since ${moment(planter.created_at).format(
-                  'MMMM DD, YYYY',
-                )}`}
+                info={
+                  <>
+                    Planter since
+                    <time dateTime={planter?.created_at}>
+                      {' '}
+                      {moment(planter?.created_at).format('MMMM DD, YYYY')}
+                    </time>
+                  </>
+                }
               />
             </Box>
             <Box sx={{ mt: 2 }}>
@@ -375,7 +384,7 @@ export default function Planter(props) {
                   },
                 },
               }}
-              title="Ass. Orgs"
+              title="Associated Orgs"
               text={
                 planter.associatedOrganizations.organizations.length || (
                   <Typography
@@ -485,7 +494,7 @@ export default function Planter(props) {
             mt: [10, 20],
           }}
         />
-        <ImpactSection />
+
         <Box sx={{ height: 40 }} />
       </Box>
       {nextExtraIsEmbed && (
@@ -497,6 +506,9 @@ export default function Planter(props) {
               width: '120px',
               height: '120px',
               margin: '10px',
+              transform:
+                planter.image_rotation &&
+                `rotate(${planter.image_rotation}deg)`,
             }}
             src={planter.image_url}
             variant="rounded"
@@ -507,13 +519,29 @@ export default function Planter(props) {
   );
 }
 
-export const getServerSideProps = wrapper(async ({ params }) => {
+async function serverSideData(params) {
   const id = params.planterid;
   const planter = await getPlanterById(id);
   const data = await getOrgLinks(planter.links);
   return {
-    props: {
-      planter: { ...planter, ...data },
-    },
+    planter: { ...planter, ...data },
+  };
+}
+
+const getStaticProps = wrapper(async ({ params }) => {
+  const props = await serverSideData(params);
+  return {
+    props,
+    revalidate: Number(process.env.NEXT_CACHE_REVALIDATION_OVERRIDE) || 30,
   };
 });
+
+// eslint-disable-next-line
+const getStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  };
+};
+
+export { getStaticProps, getStaticPaths };

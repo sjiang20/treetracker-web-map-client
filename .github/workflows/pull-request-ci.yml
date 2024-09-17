@@ -5,8 +5,10 @@ name: API CI for New Pull Requests
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
     branches:
-      - beta
+      - main
 
 jobs:
   install:

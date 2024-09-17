@@ -1,12 +1,11 @@
-name: Frontend Staging CI/CD Pipeline
+name: Deploy main channel to dev
 
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'git-tag'
+      git-tag:
+        description: 'Branch/hash/tag'
         required: true
-
 env:
   project-directory: ./
 
@@ -19,19 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.git-tag }}
+          ref: main
       - name: git configure
         run: |
           git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf ssh://git@github.com
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v1
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
       - name: npm clean install
         run: npm ci
         working-directory: ${{ env.project-directory }}
       - run: npm i -g semantic-release @semantic-release/{git,exec,changelog}
-      - run: semantic-release
+      - run: semantic-release --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: get-npm-version
@@ -41,6 +40,8 @@ jobs:
       - name: build next
         run: npm run build
         working-directory: ${{ env.project-directory }}
+        env:
+          NODE_ENV: production
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -66,7 +67,6 @@ jobs:
         run: |
           export BUMPED_VERSION="${{ steps.package-version.outputs.current-version }}"
           echo "::set-output name=bumped_version::${BUMPED_VERSION}"
-
     outputs:
       bumped_version: ${{ steps.export_bumped_version.outputs.bumped_version }}
 

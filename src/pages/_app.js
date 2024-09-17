@@ -3,8 +3,10 @@ import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import { LinearProgress, Box, useTheme, useMediaQuery } from '@mui/material';
 import log from 'loglevel';
+import App from 'next/app';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
+import { userAgentFromString } from 'next/server';
 import React from 'react';
 import packageJson from '../../package.json';
 import Layout from '../components/Layout';
@@ -14,6 +16,7 @@ import LayoutMobile from '../components/LayoutMobile';
 import LayoutMobileB from '../components/LayoutMobileB';
 import LayoutMobileC from '../components/LayoutMobileC';
 import { DrawerProvider } from '../context/DrawerContext';
+import { ConfigProvider, defaultConfig } from '../context/configContext';
 import { CustomThemeProvider } from '../context/themeContext';
 import { useLocalStorage, useEmbed } from '../hooks/globalHooks';
 import { MapContextProvider } from '../mapContext';
@@ -35,6 +38,18 @@ export const createMuiCache = () =>
     prepend: true,
   }));
 
+export function reportWebVitals({ name, delta, value, id, label }) {
+  const deployed = process.env.NODE_ENV === 'production';
+  if (label === 'web-vital' && deployed) {
+    window.gtag('event', name, {
+      value: delta,
+      metric_id: id,
+      metric_value: value,
+      metric_delta: delta,
+    });
+  }
+}
+
 function GoogleAnalytics() {
   return (
     <>
@@ -55,13 +70,18 @@ function GoogleAnalytics() {
   );
 }
 
-function TreetrackerApp({ Component, pageProps }) {
+function TreetrackerApp({ Component, pageProps, device, config }) {
   log.warn('!!!! render the _app');
+  log.warn('webmap config', config);
   const router = useRouter();
   const theme = useTheme();
+  const layoutRef = React.useRef();
 
   const embedLocalStorage = useLocalStorage('embed', false);
-  const nextExtraIsDesktop = useMediaQuery(theme.breakpoints.up('sm'));
+  const clientSideQuery = useMediaQuery(theme.breakpoints.up('sm'));
+  const onServer = typeof window === 'undefined';
+
+  const nextExtraIsDesktop = onServer ? device === 'desktop' : clientSideQuery;
   const nextExtraIsEmbed = useEmbed() === true ? true : embedLocalStorage[0];
   const nextExtraKeyword = router.query.keyword;
   const [nextExtraLoading, setNextExtraLoading] = React.useState(false);
@@ -86,6 +106,9 @@ function TreetrackerApp({ Component, pageProps }) {
     router.events.on('routeChangeComplete', () => {
       log.warn('handleRouteChangeComplete::');
       setNextExtraLoading(false);
+      if (layoutRef.current) {
+        layoutRef.current.scrollTop = 0;
+      }
     });
     router.events.on('routeChangeError', (...arg) => {
       log.warn('handleChangeError:', ...arg);
@@ -126,14 +149,14 @@ function TreetrackerApp({ Component, pageProps }) {
   }
 
   return (
-    <>
+    <ConfigProvider config={config}>
       <GoogleAnalytics />
       <CacheProvider value={muiCache ?? createMuiCache()}>
         <CustomThemeProvider>
           <DrawerProvider>
             <MapContextProvider>
               {nextExtraIsDesktop && !nextExtraIsEmbed && (
-                <Layout {...extraProps}>
+                <Layout {...extraProps} ref={layoutRef}>
                   <Component {...pageProps} {...extraProps} />
                 </Layout>
               )}
@@ -158,7 +181,7 @@ function TreetrackerApp({ Component, pageProps }) {
               {!nextExtraIsDesktop &&
                 !Component.isBLayout &&
                 !Component.isCLayout && (
-                  <LayoutMobile>
+                  <LayoutMobile ref={layoutRef}>
                     <Component {...pageProps} {...extraProps} />
                   </LayoutMobile>
                 )}
@@ -178,8 +201,38 @@ function TreetrackerApp({ Component, pageProps }) {
           <LinearProgress />
         </Box>
       )}
-    </>
+    </ConfigProvider>
   );
 }
+
+// Detect device from user agent header
+TreetrackerApp.getInitialProps = async (context) => {
+  const props = await App.getInitialProps(context);
+  const userAgent = context?.ctx.req
+    ? context.ctx.req.headers['user-agent']
+    : window.navigator.userAgent;
+
+  const device = userAgentFromString(userAgent)?.device.type || 'desktop';
+
+  let config = defaultConfig;
+  if (!process.env.NEXT_PUBLIC_SERVER_CONFIG_DISABLED) {
+    const mapConfigRequest = await fetch(
+      // TODO: use the ENV var, currently results in a bug with the theme editor
+      // `${process.env.NEXT_PUBLIC_CONFIG_API}/config`,
+      `https://dev-k8s.treetracker.org/map_config/config`,
+    );
+    // Temp solution since the backend does not have full support for the config
+    const configData = await mapConfigRequest.json();
+    config =
+      configData.find((item) => item.name === 'testing-config')?.data ||
+      defaultConfig;
+  }
+
+  return {
+    props,
+    config,
+    device,
+  };
+};
 
 export default TreetrackerApp;

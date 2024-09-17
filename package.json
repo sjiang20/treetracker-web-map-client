@@ -1,12 +1,12 @@
 {
   "name": "client",
-  "version": "2.0.0-beta.171",
+  "version": "2.2.0-beta.7",
   "private": true,
   "scripts": {
     "build": "next build",
     "build-and-start": "next build && next start",
-    "cy": "start-server-and-test dev http://localhost:3000 cypress:open",
-    "cy:nock": "cypress open --env nock=true",
+    "cy": "cypress open --env nock=true",
+    "cy:nockless": "start-server-and-test dev http://localhost:3000 cypress:open",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "cypress:run:fast": "cypress run --env nock=true --spec=cypress/tests/integration/**/*.cy.js --config video=false",
@@ -43,6 +43,7 @@
     "@emotion/server": "^11.4.0",
     "@emotion/styled": "^11.3.0",
     "@fortawesome/react-fontawesome": "^0.1.18",
+    "@hello-pangea/dnd": "^16.0.1",
     "@mui/icons-material": "^5.0.5",
     "@mui/lab": "^5.0.0-alpha.54",
     "@mui/material": "^5.0.6",
@@ -58,6 +59,7 @@
     "d3": "^7.3.0",
     "expect-runtime": "^0.4.0",
     "i18n-iso-countries": "^7.2.0",
+    "jscodeshift": "^0.14.0",
     "keycloak-connect": "^17.0.1",
     "keycloak-js": "^10.0.1",
     "leaflet": "^1.7.1",
@@ -74,7 +76,7 @@
     "react-dom": "^17.0.2",
     "react-world-map": "^2.4.0",
     "source-map-explorer": "^2.5.2",
-    "treetracker-web-map-core": "^2.5.0",
+    "treetracker-web-map-core": "2.6.4",
     "tss-react": "^2.0.3",
     "url-join-ts": "^1.0.5",
     "webfontloader": "^1.6.28"
@@ -121,7 +123,7 @@
     "webpack-dev-server": "^4.6.0"
   },
   "engines": {
-    "node": "^16"
+    "node": ">=16"
   },
   "msw": {
     "workerDirectory": "public"
